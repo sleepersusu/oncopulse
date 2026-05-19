@@ -1,6 +1,7 @@
 import logging
 import re
 
+from huggingface_hub import login
 from transformers import pipeline
 
 from config import settings
@@ -14,6 +15,9 @@ _classifier = None
 def _get_classifier():
     global _classifier
     if _classifier is None:
+        if settings.hf_token:
+            login(token=settings.hf_token, add_to_git_credential=False)
+            logger.info("HuggingFace login OK")
         logger.info("Loading emotion model: %s", settings.emotion_model_name)
         _classifier = pipeline(
             "sentiment-analysis",
