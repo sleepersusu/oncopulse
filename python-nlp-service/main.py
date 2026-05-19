@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 import scheduler as sched
-from nlp.emotion_classifier import _get_classifier
+from nlp.emotion_classifier import load_model
 from scheduler import run_pipeline
 
 logging.basicConfig(
@@ -19,7 +19,7 @@ app_state: dict = {}
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Warm up model on startup
-    _get_classifier()
+    load_model()
     sched.start(app_state)
     yield
     if "scheduler" in app_state:

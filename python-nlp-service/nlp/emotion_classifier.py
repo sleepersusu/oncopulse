@@ -24,6 +24,11 @@ def _get_classifier():
     return _classifier
 
 
+def load_model() -> None:
+    """Public entry point to warm up the model at startup."""
+    _get_classifier()
+
+
 def _preprocess(text: str) -> str:
     text = re.sub(r"http\S+", "[URL]", text)
     text = re.sub(r"@\w+", "[USER]", text)
@@ -68,12 +73,46 @@ def classify(record: RawTextRecord) -> EmotionResult:
 
 
 def classify_batch(records: list[RawTextRecord], batch_size: int = 32) -> list[EmotionResult]:
+    clf = _get_classifier()
     results: list[EmotionResult] = []
+
     for i in range(0, len(records), batch_size):
         batch = records[i : i + batch_size]
-        for record in batch:
-            try:
-                results.append(classify(record))
-            except Exception as e:
-                logger.warning("Classification failed for %s: %s", record.record_id, e)
+        texts = [_preprocess(r.text) for r in batch]
+        try:
+            # Native batching: clf([text1, text2, ...]) is faster than one-by-one
+            batch_outputs = clf(texts)
+            for record, output in zip(batch, batch_outputs):
+                scores: dict[str, float] = {}
+                for item in output:
+                    label = item["label"].lower()
+                    if "neg" in label or label == "label_0":
+                        scores["negative"] = item["score"]
+                    elif "pos" in label or label == "label_2":
+                        scores["positive"] = item["score"]
+                    else:
+                        scores["neutral"] = item["score"]
+                scores.setdefault("negative", 0.0)
+                scores.setdefault("neutral", 0.0)
+                scores.setdefault("positive", 0.0)
+                dominant = max(scores, key=scores.get)
+                results.append(EmotionResult(
+                    external_user_id=record.external_user_id,
+                    source=record.source,
+                    record_id=record.record_id,
+                    recorded_at=record.recorded_at,
+                    text_snippet=record.text[:200],
+                    emotion_label=dominant,
+                    emotion_score=scores[dominant],
+                    positive_score=scores["positive"],
+                    neutral_score=scores["neutral"],
+                    negative_score=scores["negative"],
+                ))
+        except Exception as e:
+            logger.warning("Batch classification failed (i=%d): %s — falling back one-by-one", i, e)
+            for record in batch:
+                try:
+                    results.append(classify(record))
+                except Exception as inner:
+                    logger.warning("Single classify failed for %s: %s", record.record_id, inner)
     return results
