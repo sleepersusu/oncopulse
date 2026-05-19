@@ -1,0 +1,32 @@
+# Web framework
+fastapi~=0.115
+uvicorn[standard]~=0.34
+
+# Data validation
+pydantic~=2.10
+pydantic-settings~=2.7
+
+# Database
+sqlalchemy~=2.0
+psycopg[binary]~=3.2
+
+# NLP
+transformers~=4.48
+torch~=2.5
+sentencepiece~=0.2
+
+# Reddit API
+praw~=7.8
+
+# Scheduling
+apscheduler~=3.11
+
+# HTTP client
+httpx~=0.28
+
+# Data processing
+pandas~=2.2
+numpy~=2.2
+
+# Env
+python-dotenv~=1.0

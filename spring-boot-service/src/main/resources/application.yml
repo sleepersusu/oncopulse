@@ -1,0 +1,49 @@
+spring:
+  application:
+    name: oncopulse-spring-boot-service
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/oncopulse}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:12345}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:dev_secret_change_in_production_must_be_256_bits}
+    expiration-ms: 86400000
+
+  nlp-service:
+    api-key: ${NLP_SERVICE_API_KEY:change_me}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /api-docs
